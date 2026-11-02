@@ -68,4 +68,47 @@ class IClienteDaoTest {
 
         assertThat(em.find(Cliente.class, id)).isNull();
     }
+
+    // ── Tests agregados para subir la cobertura ───────────────────────────────
+
+    @Test
+    @DisplayName("save — asigna id y fecha de creación (@PrePersist)")
+    void save_debeAsignarIdYFechaDeCreacion() {
+        Cliente nuevo = new Cliente();
+        nuevo.setNombre("Ada");
+        nuevo.setApellido("Lovelace");
+        nuevo.setEmail("ada-test@babbage.io");
+        nuevo.setRegion(region);
+
+        Cliente guardado = clienteDao.save(nuevo);
+        em.flush();
+
+        assertThat(guardado.getId()).isNotNull();
+        assertThat(guardado.getCreateAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("findById — devuelve el cliente persistido")
+    void findById_debeRetornarElCliente() {
+        assertThat(clienteDao.findById(cliente.getId()))
+                .isPresent()
+                .get()
+                .extracting(Cliente::getEmail)
+                .isEqualTo("grace-test@navy.mil");
+    }
+
+    @Test
+    @DisplayName("existsById — true si existe y false si no")
+    void existsById_debeIndicarSiExiste() {
+        assertThat(clienteDao.existsById(cliente.getId())).isTrue();
+        assertThat(clienteDao.existsById(-1L)).isFalse();
+    }
+
+    @Test
+    @DisplayName("findAll — incluye el cliente persistido")
+    void findAll_debeIncluirElClientePersistido() {
+        assertThat(clienteDao.findAll())
+                .extracting(Cliente::getEmail)
+                .contains("grace-test@navy.mil");
+    }
 }

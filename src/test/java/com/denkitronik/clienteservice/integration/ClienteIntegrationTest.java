@@ -88,6 +88,46 @@ class ClienteIntegrationTest {
         assertThat(respuesta.getBody().getEmail()).isEqualTo("margaret@apollo.nasa");
     }
 
+    @Test @Order(3)
+    @DisplayName("GET /clientes → 200 incluye el cliente creado")
+    void listarClientes_debeIncluirElClienteCreado() {
+        ResponseEntity<Cliente[]> respuesta =
+                restTemplate.getForEntity(BASE + "/clientes", Cliente[].class);
+
+        assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(respuesta.getBody())
+                .extracting(Cliente::getEmail)
+                .contains("margaret@apollo.nasa");
+    }
+
+    @Test @Order(3)
+    @DisplayName("GET /clientes/page/0 → 200 devuelve la primera página")
+    void listarClientesPaginado_debeRetornar200() {
+        ResponseEntity<String> respuesta =
+                restTemplate.getForEntity(BASE + "/clientes/page/0", String.class);
+
+        assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(respuesta.getBody()).contains("margaret@apollo.nasa");
+    }
+
+    @Test @Order(4)
+    @DisplayName("POST /clientes con email duplicado → 500 (ClienteServiceException)")
+    void crearClienteEmailDuplicado_debeRetornar500() {
+        Region region = new Region();
+        region.setId(regionId);
+
+        Cliente duplicado = new Cliente();
+        duplicado.setNombre("Otra");
+        duplicado.setApellido("Persona");
+        duplicado.setEmail("margaret@apollo.nasa");   // ya existe (creado en el test 1)
+        duplicado.setRegion(region);
+
+        ResponseEntity<String> respuesta =
+                restTemplate.postForEntity(BASE + "/clientes", duplicado, String.class);
+
+        assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     @Test @Order(5)
     @DisplayName("PUT /clientes/{id} → 201 actualiza los datos")
     void actualizarCliente_debeRetornar201() {
@@ -127,6 +167,28 @@ class ClienteIntegrationTest {
         ResponseEntity<String> respuesta =
                 restTemplate.getForEntity(BASE + "/clientes/" + idCreado, String.class);
         assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test @Order(8)
+    @DisplayName("GET /clientes/regiones → 200 devuelve las regiones")
+    void listarRegiones_debeRetornar200() {
+        ResponseEntity<Region[]> respuesta =
+                restTemplate.getForEntity(BASE + "/clientes/regiones", Region[].class);
+
+        assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(respuesta.getBody())
+                .extracting(Region::getId)
+                .contains(regionId);
+    }
+
+    @Test @Order(9)
+    @DisplayName("POST /clientes inválido → 400 con lista de errores")
+    void crearClienteInvalido_debeRetornar400() {
+        ResponseEntity<String> respuesta =
+                restTemplate.postForEntity(BASE + "/clientes", new Cliente(), String.class);
+
+        assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(respuesta.getBody()).contains("errors");
     }
 
     private HttpHeaders headersJson() {

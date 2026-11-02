@@ -13,7 +13,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -127,5 +132,79 @@ class ClienteServiceImplTest {
         assertThatThrownBy(() -> clienteService.update(999L, cliente))
                 .isInstanceOf(ClienteNotFoundException.class)
                 .hasMessageContaining("999");
+    }
+
+    // ── Tests agregados para subir la cobertura ───────────────────────────────
+
+    @Test
+    @DisplayName("findAll() — devuelve todos los clientes")
+    void findAll_debeRetornarTodosLosClientes() {
+        when(clienteDao.findAll()).thenReturn(List.of(cliente));
+
+        List<Cliente> resultado = clienteService.findAll();
+
+        assertThat(resultado).hasSize(1).containsExactly(cliente);
+        verify(clienteDao).findAll();
+    }
+
+    @Test
+    @DisplayName("findAll(Pageable) — devuelve la página solicitada")
+    void findAllPaginado_debeRetornarLaPagina() {
+        Pageable pageable = PageRequest.of(0, 4);
+        Page<Cliente> pagina = new PageImpl<>(List.of(cliente), pageable, 1);
+        when(clienteDao.findAll(pageable)).thenReturn(pagina);
+
+        Page<Cliente> resultado = clienteService.findAll(pageable);
+
+        assertThat(resultado.getContent()).containsExactly(cliente);
+        assertThat(resultado.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("save — datos válidos → devuelve el cliente guardado")
+    void save_datosValidos_debeRetornarClienteGuardado() {
+        when(clienteDao.save(cliente)).thenReturn(cliente);
+
+        Cliente resultado = clienteService.save(cliente);
+
+        assertThat(resultado).isSameAs(cliente);
+        verify(clienteDao).save(cliente);
+    }
+
+    @Test
+    @DisplayName("delete — ID existente → elimina el cliente")
+    void delete_idExistente_debeEliminar() {
+        when(clienteDao.existsById(1L)).thenReturn(true);
+
+        clienteService.delete(1L);
+
+        verify(clienteDao).deleteById(1L);
+    }
+
+    @Test
+    @DisplayName("findAllRegiones — devuelve las regiones del DAO")
+    void findAllRegiones_debeRetornarRegiones() {
+        when(clienteDao.findAllRegiones()).thenReturn(List.of(region));
+
+        List<Region> resultado = clienteService.findAllRegiones();
+
+        assertThat(resultado).containsExactly(region);
+    }
+
+    @Test
+    @DisplayName("ClienteServiceException(String) — conserva el mensaje")
+    void clienteServiceException_soloMensaje_debeConservarMensaje() {
+        ClienteServiceException ex = new ClienteServiceException("algo falló");
+
+        assertThat(ex).hasMessage("algo falló").hasNoCause();
+    }
+
+    @Test
+    @DisplayName("ClienteNotFoundException — expone el id y el mensaje")
+    void clienteNotFoundException_debeExponerId() {
+        ClienteNotFoundException ex = new ClienteNotFoundException(42L);
+
+        assertThat(ex.getId()).isEqualTo(42L);
+        assertThat(ex).hasMessageContaining("42");
     }
 }

@@ -1,4 +1,3 @@
-
 name: CI — Build, Test & Docker
 
 # Se dispara en cada push o PR hacia master
@@ -26,9 +25,24 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      # Ejecuta todos los tests
+      # Ejecuta todos los tests y verifica el umbral de cobertura (JaCoCo, ver pom.xml)
       - name: Ejecuta todos los tests
-        run: mvn test
+        run: mvn -B verify
+
+      # Muestra el porcentaje de cobertura en el resumen de la ejecución
+      - name: Resumen de cobertura
+        if: always()
+        run: |
+          if [ -f target/site/jacoco/jacoco.csv ]; then
+            echo "### Cobertura de pruebas (JaCoCo)" >> "$GITHUB_STEP_SUMMARY"
+            awk -F, 'NR>1 { im+=$4; ic+=$5; bm+=$6; bc+=$7; lm+=$8; lc+=$9 }
+              END {
+                printf "| Métrica | Cobertura |\n|---|---|\n"
+                printf "| Líneas | %.1f%% |\n", lc*100/(lm+lc)
+                printf "| Instrucciones | %.1f%% |\n", ic*100/(im+ic)
+                printf "| Ramas | %.1f%% |\n", (bm+bc>0 ? bc*100/(bm+bc) : 100)
+              }' target/site/jacoco/jacoco.csv >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       # Guarda el reporte JaCoCo como artefacto descargable
       - name: Publica reporte de cobertura
