@@ -1,8 +1,14 @@
 HELP.md
 target/
+*.jar
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+### ENV ###
+.env
+.env.*
+!.env.example
 
 ### STS ###
 .apt_generated
@@ -14,7 +20,7 @@ target/
 .sts4-cache
 
 ### IntelliJ IDEA ###
-.idea
+.idea/
 *.iws
 *.iml
 *.ipr
@@ -31,3 +37,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Logs ###
+*.log
