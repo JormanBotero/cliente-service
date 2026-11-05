@@ -1,4 +1,18 @@
-name: entregar.yml
+name: Calificar mi entrega
+
+permissions:
+  id-token: write
+  contents: read
+
 on:
+  push:
+    branches: [master]
+  workflow_dispatch: {}
 
 jobs:
+  calificar:
+    uses: devxcape/codelab-grading/.github/workflows/grade.yml@v1
+    with:
+      challenge_id: "cd6dbe4a-00cb-4068-9875-8584a135d51b"
+
+
